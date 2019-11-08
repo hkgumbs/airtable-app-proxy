@@ -1,12 +1,18 @@
 const https = require("https");
 const jwt = require("jsonwebtoken");
 const querystring = require("querystring");
+const util = require("util");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 
-const fetch = (url, options) => {
+const request = (path, options) => {
+  const url = "https://api.airtable.com/v0/" + AIRTABLE_BASE_ID + path;
+  options.headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + AIRTABLE_API_KEY,
+  };
   return new Promise((resolve, reject) => {
     https
       .request(url, options, response => {
@@ -24,52 +30,47 @@ const ownerIs = (owner, json) => {
     : json.records.every(x => x.fields.Owner == owner);
 }
 
-const authorize = (token, event, report, callback) => {
+const authorize = (token, event) => {
   switch (event.httpMethod.toUpperCase()) {
     case "GET":
-      event.queryStringParameters["filterByFormula"] = "Owner = '" + token.sub + "'";
-      return callback();
+      event.queryStringParameters.filterByFormula = "Owner = '" + token.sub + "'";
+      return Promise.resolve(event);
 
     case "POST":
-      if (ownerIs(token.sub, JSON.parse(event.body)))
-        return callback();
-      else
-        throw new Error("UNAUTHORIZED");
+      return ownerIs(token.sub, JSON.parse(event.body))
+        ? Promise.resolve(event)
+        : Promise.reject(new Error("Unauthorized"));
+
+    case "PATCH":
+    case "DELETE":
+      // TODO
+      return request("/", { method: "GET" });
 
     default:
-      throw new Error("UNAUTHORIZED");
+      return Promise.reject(new Error("Unauthorized"));
   }
+};
+
+const relay = event => {
+  const path = "/"
+    + event.headers["x-airtable-path"]
+    + "?"
+    + querystring.stringify(event.queryStringParameters);
+  return request(path, { method: event.httpMethod, body: event.body });
 };
 
 const proxy = (event, callback) => {
-  const report = err => {
-    console.log(err, event);
-    callback({ statusCode: 401, body: "" });
-  }
-  try {
-    const bearer = event.headers.authorization.slice("Bearer ".length);
-    const token = jwt.verify(bearer, JWT_SECRET, { algorithms: ["HS256"] });
-    authorize(token, event, report, () => {
-      const url = "https://api.airtable.com/v0/"
-        + AIRTABLE_BASE_ID
-        + "/"
-        + event.headers["x-airtable-table"]
-        + "?"
-        + querystring.stringify(event.queryStringParameters);
-      const options = {
-        method: event.httpMethod,
-        body: event.body,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + AIRTABLE_API_KEY,
-        },
-      };
-      fetch(url, options).then(response => callback(response));
+  const authorization = event.headers.authorization || "";
+  const bearer = authorization.slice("Bearer ".length);
+  util.promisify(jwt.verify)(bearer, JWT_SECRET, { algorithms: ["HS256"] })
+    .then(token => authorize(token, event))
+    .then(newEvent => relay(newEvent))
+    .then(response => callback(response))
+    .catch(err => {
+      console.log(err, event);
+      callback({ statusCode: 401, body: "" });
     });
-  } catch (err) {
-    report(err);
-  }
 };
 
 exports.proxy = proxy;
-exports.handler = (event, context, callback) => proxy(event, x => callback(null, x));
+exports.handler = (event, _, callback) => proxy(event, x => callback(null, x));
