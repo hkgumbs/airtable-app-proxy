@@ -3,6 +3,9 @@
   publish = "publish"
   functions = .
 
+[build.environment]
+  AWS_LAMBDA_JS_RUNTIME = "nodejs10.x"
+
 [template.environment]
   JWT_SECRET = "Secret for decoding auth information in JWT"
   AIRTABLE_API_KEY = "Secret from https://airtable.com/account"

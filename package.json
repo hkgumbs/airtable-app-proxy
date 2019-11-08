@@ -3,7 +3,7 @@
   "description": "Airtable app proxy",
   "repository": "https://github.com/hkgumbs/airtable-app-proxy",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/api.js",
   "dependencies": {
     "jsonwebtoken": "8.5.1"
   },
