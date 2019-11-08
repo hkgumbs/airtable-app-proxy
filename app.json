@@ -1,0 +1,17 @@
+{
+  "name": "Airtable app proxy",
+  "description": "Airtable app proxy",
+  "website": "https://kofi.sexy/blog/airtable-app-proxy",
+  "repository": "https://github.com/hkgumbs/airtable-app-proxy",
+  "env": {
+      "JWT_SECRET": {
+          "description": "Secret for decoding auth information in JWT"
+      },
+      "AIRTABLE_API_KEY": {
+          "description": "Secret from https://airtable.com/account"
+      },
+      "AIRTABLE_BASE_ID": {
+          "description": "Airtable ID for the base you want to use"
+      }
+  }
+}
