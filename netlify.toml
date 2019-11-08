@@ -1,0 +1,9 @@
+[build]
+  command = "echo OK"
+  publish = "publish"
+  functions = .
+
+[template.environment]
+  JWT_SECRET = "Secret for decoding auth information in JWT"
+  AIRTABLE_API_KEY = "Secret from https://airtable.com/account"
+  AIRTABLE_BASE_ID = "Airtable ID for the base you want to use"
