@@ -1,6 +1,6 @@
 [build]
   command = "cp src/api.js ./"
-  publish = "publish"
+  publish = "tmp"
   functions = "."
 
 [build.environment]
