@@ -1,7 +1,7 @@
 {
-  "name": "trainervision",
-  "description": "Trainer Vision",
-  "repository": "https://github.com/hkgumbs/trainervision",
+  "name": "airtable-app-proxy",
+  "description": "Airtable app proxy",
+  "repository": "https://github.com/hkgumbs/airtable-app-proxy",
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
