@@ -1,5 +1,5 @@
 [build]
-  command = "echo OK"
+  command = "cp src/api.js ./"
   publish = "publish"
   functions = "."
 
