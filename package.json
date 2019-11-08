@@ -1,0 +1,14 @@
+{
+  "name": "trainervision",
+  "description": "Trainer Vision",
+  "repository": "https://github.com/hkgumbs/trainervision",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "jsonwebtoken": "8.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "author": "",
+  "license": "UNLICENSED"
+}
