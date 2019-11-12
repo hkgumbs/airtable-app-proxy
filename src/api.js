@@ -9,7 +9,7 @@ const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_OWNER_TABLE_NAME = process.env.AIRTABLE_OWNER_TABLE_NAME;
 
 const request = (path, options) => {
-  const url = "https://api.airtable.com/v0/" + AIRTABLE_BASE_ID + path;
+  const url = "https://api.airtable.com/v0/" + AIRTABLE_BASE_ID + "/" + path;
   options.headers = {
     "Content-Type": "application/json",
     "Authorization": "Bearer " + AIRTABLE_API_KEY,
@@ -30,14 +30,9 @@ const authIf = (event, check) => {
 };
 
 const precheck = (owner, event, recordIds) => {
-  const table = event.headers["x-airtable-path"];
-  const path = "/" + AIRTABLE_OWNER_TABLE_NAME + "?" + querystring.stringify({
-    "fields[]": table,
-    "filterByFormula": "RECORD_ID() = '" + owner + "'",
-  });
-  return request(path, { method: "GET" }).then(response => {
-    const all = JSON.parse(response.body).records.map(x => x.fields[table]);
-    return authIf(event, recordIds.every(id => all.some(x => x.includes(id))));
+  return request(AIRTABLE_OWNER_TABLE_NAME + "/" + owner, { method: "GET" }).then(response => {
+    const all = JSON.parse(response.body).fields[event.headers["x-airtable-path"]];
+    return authIf(event, recordIds.every(id => all.includes(id)));
   });
 };
 
@@ -57,15 +52,15 @@ const authorize = (token, event) => {
     case "PATCH":
       return precheck(token.sub, event, JSON.parse(event.body).records.map(x => x.id));
     case "DELETE":
-      return precheck(token.sub, event, event.queryStringParameters.records);
+      const ids = event.queryStringParameters["records[]"];
+      return precheck(token.sub, event, Array.isArray(ids) ? ids : [ids]);
     default:
       return Promise.reject(405);
   }
 };
 
 const relay = event => {
-  const path = "/"
-    + event.headers["x-airtable-path"]
+  const path = event.headers["x-airtable-path"]
     + "?"
     + querystring.stringify(event.queryStringParameters);
   return request(path, { method: event.httpMethod, body: event.body });
