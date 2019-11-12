@@ -9,4 +9,5 @@
 [template.environment]
   AIRTABLE_API_KEY = "Airtable API key from airtable.com/account"
   AIRTABLE_BASE_ID = "Airtable Base ID from airtable.com/api"
+  AIRTABLE_OWNER_TABLE_NAME = "Airtable \"Owner\" Table name for authorizing your app users"
   JWT_SECRET = "JWT Secret for decoding auth information"

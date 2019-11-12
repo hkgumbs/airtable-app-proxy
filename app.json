@@ -12,6 +12,9 @@
       },
       "AIRTABLE_BASE_ID": {
           "description": "Airtable ID for the base you want to use"
+      },
+      "AIRTABLE_OWNER_TABLE_NAME": {
+          "description": "Airtable \"Owner\" Table name for authorizing your app users"
       }
   }
 }

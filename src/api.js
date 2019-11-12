@@ -6,6 +6,7 @@ const util = require("util");
 const JWT_SECRET = process.env.JWT_SECRET;
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+const AIRTABLE_OWNER_TABLE_NAME = process.env.AIRTABLE_OWNER_TABLE_NAME;
 
 const request = (path, options) => {
   const url = "https://api.airtable.com/v0/" + AIRTABLE_BASE_ID + path;
@@ -24,30 +25,41 @@ const request = (path, options) => {
   });
 };
 
+const authIf = (event, check) => {
+  return check ? Promise.resolve(event) : Promise.reject(401);
+};
+
+const precheck = (owner, event, recordIds) => {
+  const table = event.headers["x-airtable-path"];
+  const path = "/" + AIRTABLE_OWNER_TABLE_NAME + "?" + querystring.stringify({
+    "fields[]": table,
+    "filterByFormula": "RECORD_ID() = '" + owner + "'",
+  });
+  return request(path, { method: "GET" }).then(response => {
+    const all = JSON.parse(response.body).records.map(x => x.fields[table]);
+    return authIf(event, recordIds.every(id => all.some(x => x.includes(id))));
+  });
+};
+
 const ownerIs = (owner, json) => {
   return json.fields
     ? json.fields.Owner == owner
     : json.records.every(x => x.fields.Owner == owner);
-}
+};
 
 const authorize = (token, event) => {
   switch (event.httpMethod.toUpperCase()) {
     case "GET":
       event.queryStringParameters.filterByFormula = "Owner = '" + token.sub + "'";
       return Promise.resolve(event);
-
     case "POST":
-      return ownerIs(token.sub, JSON.parse(event.body))
-        ? Promise.resolve(event)
-        : Promise.reject(new Error("Unauthorized"));
-
+      return authIf(event, ownerIs(token.sub, JSON.parse(event.body)));
     case "PATCH":
+      return precheck(token.sub, event, JSON.parse(event.body).records.map(x => x.id));
     case "DELETE":
-      // TODO
-      return request("/", { method: "GET" });
-
+      return precheck(token.sub, event, event.queryStringParameters.records);
     default:
-      return Promise.reject(new Error("Unauthorized"));
+      return Promise.reject(405);
   }
 };
 
@@ -68,7 +80,7 @@ const proxy = (event, callback) => {
     .then(response => callback(response))
     .catch(err => {
       console.log(err, event);
-      callback({ statusCode: 401, body: "" });
+      callback({ statusCode: isNaN(err) ? 400 : err, body: "" });
     });
 };
 
