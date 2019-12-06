@@ -3,9 +3,6 @@
   publish = "dist"
   functions = "."
 
-[build.environment]
-  AWS_LAMBDA_JS_RUNTIME = "nodejs10.x"
-
 [template.environment]
   AIRTABLE_API_KEY = "Airtable API key from airtable.com/account"
   AIRTABLE_BASE_ID = "Airtable Base ID from airtable.com/api"
